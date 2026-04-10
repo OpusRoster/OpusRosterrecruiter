@@ -3,20 +3,11 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  LayoutDashboard,
-  Search,
-  Columns,
-  Mail,
-  Zap,
-  Video,
-  Users,
-  BarChart2,
-  Settings,
-  LogOut,
-  Send,
-  UserCheck,
-  Plus,
+  LayoutDashboard, Search, Columns, Mail, Zap,
+  Video, Users, BarChart2, Settings, LogOut,
+  Send, UserCheck, Plus, ChevronDown, ChevronRight,
 } from "lucide-react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
@@ -95,13 +86,20 @@ function SidebarSection({ label, children }: { label: string; children: React.Re
 function SourcingNav({ jobs }: { jobs: SourcingJob[] }) {
   const pathname = usePathname();
   const sourcingActive = pathname.startsWith("/sourcing");
+  const [open, setOpen] = useState(sourcingActive);
+
+  // Auto-open when on a sourcing route
+  useEffect(() => {
+    if (sourcingActive) setOpen(true);
+  }, [sourcingActive]);
 
   return (
     <div>
-      <Link
-        href="/sourcing"
+      {/* Sourcing header — clickable to toggle */}
+      <button
+        onClick={() => setOpen((v) => !v)}
         className={cn(
-          "flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm transition-colors",
+          "flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm transition-colors",
           sourcingActive
             ? "bg-white/[0.12] font-medium text-white"
             : "text-white/60 hover:bg-white/[0.06] hover:text-white/85"
@@ -110,53 +108,58 @@ function SourcingNav({ jobs }: { jobs: SourcingJob[] }) {
         <span className={cn("shrink-0", sourcingActive ? "opacity-100" : "opacity-70")}>
           <Search size={15} />
         </span>
-        <span className="flex-1">Sourcing</span>
+        <span className="flex-1 text-left">Sourcing</span>
         <Badge variant="live" size="sm">Live</Badge>
-      </Link>
+        <span className="ml-1 text-white/40">
+          {open ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+        </span>
+      </button>
 
-      {/* Sub-nav */}
-      <div className="ml-4 mt-1 flex flex-col gap-0.5 border-l border-white/[0.08] pl-3">
-        {SOURCING_STAGES.map((stage) => (
-          <div
-            key={stage.label}
-            className="flex items-center justify-between rounded-md px-2 py-1 text-xs text-white/40 hover:bg-white/[0.04] hover:text-white/60 cursor-pointer transition-colors"
+      {/* Dropdown sub-nav */}
+      {open && (
+        <div className="ml-4 mt-1 flex flex-col gap-0.5 border-l border-white/[0.08] pl-3">
+          {SOURCING_STAGES.map((stage) => (
+            <div
+              key={stage.label}
+              className="flex cursor-pointer items-center justify-between rounded-md px-2 py-1 text-xs text-white/40 transition-colors hover:bg-white/[0.04] hover:text-white/60"
+            >
+              <span>{stage.label}</span>
+              <span className="font-mono text-2xs text-white/30">{stage.count}</span>
+            </div>
+          ))}
+
+          {jobs.length > 0 && (
+            <>
+              <p className="mt-2 px-2 text-2xs font-semibold uppercase tracking-widest text-white/25">
+                AI Sourced
+              </p>
+              {jobs.map((job) => (
+                <Link
+                  key={job.id}
+                  href={`/sourcing/${job.id}`}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs transition-colors",
+                    pathname === `/sourcing/${job.id}`
+                      ? "bg-white/[0.10] font-medium text-white"
+                      : "text-white/50 hover:bg-white/[0.04] hover:text-white/75"
+                  )}
+                >
+                  <div className="h-1.5 w-1.5 shrink-0 rounded-full bg-teal-400" />
+                  <span className="truncate">{job.title}</span>
+                </Link>
+              ))}
+            </>
+          )}
+
+          <Link
+            href="/onboarding/search"
+            className="mt-1 flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-white/40 transition-colors hover:bg-white/[0.04] hover:text-teal-400"
           >
-            <span>{stage.label}</span>
-            <span className="font-mono text-2xs text-white/30">{stage.count}</span>
-          </div>
-        ))}
-
-        {jobs.length > 0 && (
-          <>
-            <p className="mt-2 px-2 text-2xs font-semibold uppercase tracking-widest text-white/25">
-              AI Sourced
-            </p>
-            {jobs.map((job) => (
-              <Link
-                key={job.id}
-                href={`/sourcing/${job.id}`}
-                className={cn(
-                  "flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs transition-colors",
-                  pathname === `/sourcing/${job.id}`
-                    ? "bg-white/[0.10] font-medium text-white"
-                    : "text-white/50 hover:bg-white/[0.04] hover:text-white/75"
-                )}
-              >
-                <div className="h-1.5 w-1.5 shrink-0 rounded-full bg-teal-400" />
-                <span className="truncate">{job.title}</span>
-              </Link>
-            ))}
-          </>
-        )}
-
-        <Link
-          href="/onboarding/search"
-          className="mt-1 flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-white/40 transition-colors hover:bg-white/[0.04] hover:text-teal-400"
-        >
-          <Plus size={12} />
-          New Search
-        </Link>
-      </div>
+            <Plus size={12} />
+            New Search
+          </Link>
+        </div>
+      )}
     </div>
   );
 }
@@ -212,16 +215,11 @@ export function Sidebar({ user, creditUsage, jobs = [] }: SidebarProps) {
       {/* Logo */}
       <div className="flex items-center gap-2.5 border-b border-white/[0.08] px-4 py-[18px]">
         <svg width="26" height="28" viewBox="0 0 120 130" fill="none" aria-hidden>
-          <path
-            d="M60 10C35 10 15 30 15 55C15 75 27 92 44 100L44 120L60 105L76 120L76 100C93 92 105 75 105 55C105 30 85 10 60 10Z"
-            fill="white"
-          />
+          <path d="M60 10C35 10 15 30 15 55C15 75 27 92 44 100L44 120L60 105L76 120L76 100C93 92 105 75 105 55C105 30 85 10 60 10Z" fill="white" />
           <path d="M60 10L105 55L76 100L76 120L60 105L60 10Z" fill="#5DCAA5" />
           <circle cx="60" cy="52" r="18" fill="#1D3557" />
         </svg>
-        <span className="text-[15px] font-medium tracking-tight text-white">
-          OpusRoster
-        </span>
+        <span className="text-[15px] font-medium tracking-tight text-white">OpusRoster</span>
       </div>
 
       {/* Nav */}
@@ -234,23 +232,10 @@ export function Sidebar({ user, creditUsage, jobs = [] }: SidebarProps) {
 
         <SidebarSection label="Recruiting">
           <SourcingNav jobs={jobs} />
-          <SidebarNavItem
-            item={{ href: "/candidates", label: "Candidates", icon: <UserCheck size={15} /> }}
-          />
-          <SidebarNavItem
-            item={{ href: "/outreach", label: "Outreach", icon: <Send size={15} /> }}
-          />
-          <SidebarNavItem
-            item={{
-              href: "/inbox",
-              label: "Inbox",
-              icon: <Mail size={15} />,
-              badge: { label: "3", variant: "danger" },
-            }}
-          />
-          <SidebarNavItem
-            item={{ href: "/pipeline", label: "Pipeline", icon: <Columns size={15} /> }}
-          />
+          <SidebarNavItem item={{ href: "/candidates", label: "Candidates", icon: <UserCheck size={15} /> }} />
+          <SidebarNavItem item={{ href: "/outreach", label: "Outreach", icon: <Send size={15} /> }} />
+          <SidebarNavItem item={{ href: "/inbox", label: "Inbox", icon: <Mail size={15} />, badge: { label: "3", variant: "danger" } }} />
+          <SidebarNavItem item={{ href: "/pipeline", label: "Pipeline", icon: <Columns size={15} /> }} />
         </SidebarSection>
 
         <SidebarSection label="Autopilot">
@@ -265,9 +250,7 @@ export function Sidebar({ user, creditUsage, jobs = [] }: SidebarProps) {
         <div className="mb-2">
           <CreditMeter usage={creditUsage} />
         </div>
-        <SidebarNavItem
-          item={{ href: "/settings", label: "Settings", icon: <Settings size={15} /> }}
-        />
+        <SidebarNavItem item={{ href: "/settings", label: "Settings", icon: <Settings size={15} /> }} />
         <div className="flex items-center gap-2.5 rounded-md px-2.5 py-2">
           <Avatar
             initials={(user.fullName ?? user.email).slice(0, 2).toUpperCase()}
@@ -276,9 +259,7 @@ export function Sidebar({ user, creditUsage, jobs = [] }: SidebarProps) {
             className="text-navy-800"
           />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-xs font-medium text-white">
-              {user.fullName ?? user.email}
-            </p>
+            <p className="truncate text-xs font-medium text-white">{user.fullName ?? user.email}</p>
             <p className="truncate text-2xs text-white/40">{user.email}</p>
           </div>
           <button
