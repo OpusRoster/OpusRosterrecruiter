@@ -1,4 +1,4 @@
-import { createServerClient } from "@supabase/ssr";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
 export function createClient() {
@@ -12,7 +12,7 @@ export function createClient() {
         getAll() {
           return cookieStore.getAll();
         },
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet: { name: string; value: string; options?: CookieOptions }[]) {
           try {
             cookiesToSet.forEach(({ name, value, options }) => {
               cookieStore.set(name, value, options);
@@ -50,15 +50,12 @@ export async function getUserProfile() {
   try {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
-
     if (!user) return null;
-
     const { data: profile } = await supabase
       .from("users")
       .select("*")
       .eq("id", user.id)
       .single();
-
     return profile;
   } catch {
     return null;
